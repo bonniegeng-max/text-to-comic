@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.3.0
+
+Released 2026-09-04. Document-level Chinese typography and layout hardening plus a zh-CN example. JSON schemas are unchanged.
+
+### Added
+
+- `examples/chinese-webtoon-demo.json`: a zh-CN diary / slice-of-life webtoon example (black short hair + round glasses + slim female protagonist), following the same field structure as `examples/four-panel-demo.json`
+
+### Changed
+
+- SKILL.md `Hard constraints`: new "Chinese dialogue and layout (中文对白与排版约束)" subsection with concrete readability limits:
+  - per speech bubble ≤ 16 characters, per-panel dialogue ≤ 40 characters, per-panel caption ≤ 25 characters
+  - full-width Chinese punctuation requirements
+  - short-line / split-gutter layout advice for bubbles
+  - vertical-text handling guidance (assembly-layer only)
+  - Chinese title-area suggestion during assembly (≤ 12 characters, matching CJK font family)
+- SKILL.md `Example resources`: added pointer to `examples/chinese-webtoon-demo.json`
+
+### Compatibility notes
+
+- Slug remains `text-to-comic`
+- `schemas/panel-plan.schema.json` and `schemas/render-task.schema.json` are unchanged; the new rules live at the document/planning level only
+- Existing v1/v2 outputs remain valid
+
+## 2.2.0
+
+Released 2026-09-01. 新增 topics 与中英双语 description（含触发词），修复 README 版本/目录树问题。
+
 ## 2.0.0
 
 This release upgrades the installed ClawHub release `1.0.0` into a publish-ready, structured v2 package.

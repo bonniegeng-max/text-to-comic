@@ -218,6 +218,36 @@ Prefer:
 
 If the user explicitly wants all-Chinese bubbles, try it, but still favor readability and brevity.
 
+### Chinese dialogue and layout (中文对白与排版约束)
+
+When the target language is Chinese (zh-CN), enforce these extra readability rules on top of `text_budget`. These are document-level guidance for planning and assembly; the JSON schemas are unchanged.
+
+**对白与旁白的字数上限（基于中文排版可读性）：**
+- 单个对话气泡：建议 ≤ 16 字（含中文标点占位，超出则拆句，不放第二行硬塞）
+- 整格内所有对白合计：建议 ≤ 40 字（含标点）
+- caption / 旁白单格：建议 ≤ 25 字（含标点）
+- 上述字数按"每个全角字符占 1 字"计数（含标点）；若必须放入英文、数字或拼音，按 1 个半角字符 ≈ 0.6 字折算占用，避免超限
+
+**中文标点规范：**
+- 对话内一律使用中文标点：逗号「，」、句号「。」、问号「？」、感叹号「！」；不用半角 `,` `.` `?` `!`
+- 省略号用中文「……」；引号内对话用「」或“”；破折号用「——」
+- 不使用连排标点（如 `。。` `！！`）；标点占位会影响字数预算
+
+**气泡内的排版建议：**
+- 单气泡内不换行过多：短句优先（一句一个停顿）
+- 整格对白超 40 字时，拆到多格 / 多气泡，或用旁白承接，绝不让一格塞满小字
+- 心情、环境等"可画出来"的信息不要写进对白，留给画面
+
+**竖排文字场景：**
+- 默认对白用横排（现代中文阅读习惯 + 生图可读性）
+- 仅在标题、古风 / 竖排叙事、或用户明确要求时使用竖排；竖排时每列 ≤ 12 字，气泡按列排布，拼版时再叠文字
+- 生图阶段文字不可控，竖排文字一律在拼版层处理，不在格内依赖 AI 直出
+
+**拼版时中文标题区建议：**
+- 若作品有中文标题，拼版时预留独立标题区（顶部标题条或封面区），不在第一格内直接画字
+- 中文标题建议 ≤ 12 字；副标题 ≤ 20 字
+- 标题区需匹配正文字体族（同一套 CJK 字体），避免系统字体缺字（如宋体 / 黑体未覆盖的生僻字）
+
 ### Scene continuity
 
 Use clear indoor/outdoor/street/home/office/etc. tags in planning when scene continuity matters.
@@ -282,6 +312,7 @@ When a request is ambiguous, recommend 2 to 3 styles instead of forcing a single
 
 If you need a concrete starting point, read:
 - `examples/four-panel-demo.json`
+- `examples/chinese-webtoon-demo.json` (zh-CN diary/slice-of-life webtoon example)
 - `presets/styles.json`
 - `schemas/panel-plan.schema.json`
 - `schemas/render-task.schema.json`
