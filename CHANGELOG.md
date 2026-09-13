@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.3.1
+
+Released 2026-09-13. ClawHub discoverability fix. Skill behavior is unchanged.
+
+### Added
+
+- SKILL.md `How it differs` section: states plainly that this is not a one-shot image generator, not a style-cloning tool, and not a research tool.
+- SKILL.md frontmatter `version` field, for repository hygiene. The published registry version is derived by ClawHub itself.
+
+### Changed
+
+- SKILL.md `description`: now leads with an English problem statement plus a `Not for` clause (pure text writing / imitating a living artist's signature style / reproducing copyrighted material). Chinese trigger coverage retained.
+- ClawHub catalog metadata: categories set from `other` to `creative`; topics set to `comic, storyboard, infographic, visual-storytelling, picture-book`.
+
 ## 2.3.0
 
 Released 2026-09-04. Document-level Chinese typography and layout hardening plus a zh-CN example. JSON schemas are unchanged.

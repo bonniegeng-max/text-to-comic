@@ -1,6 +1,7 @@
 ---
 name: text-to-comic
-description: 将用户文字、照片说明或知识内容转化为漫画、绘本或信息图；先做结构化 storyboard/panel plan，再逐格出图、校验与拼版，适用于需要风格推荐、角色一致性和可迭代修改的视觉化任务。
+version: 2.3.1
+description: Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram — storyboard and panel plan first, then panel-by-panel rendering, with style presets and consistent characters. 把文字、对话、日记、照片说明或知识内容转成漫画/绘本/信息图，先出分镜再逐格出图，角色一致、可只改单格。Use when 想画故事、对话变漫画、概念变信息图、旅行日记配图、改某一格而不重画整页。Not for 纯文字写作、模仿在世画家的标志性风格、复制受版权保护的素材。
 metadata: { "openclaw": { "os": ["darwin","linux"], "requires": { "bins": ["python3"], "config": ["image_gen.enabled"] } } }
 user-invocable: true
 disable-model-invocation: false
@@ -43,6 +44,12 @@ Do not use this skill when the task is mainly:
 - pure text writing with no visual output
 - exact imitation of a living artist's distinctive signature style
 - direct reproduction of copyrighted third-party material
+
+## How it differs
+
+- **Not a one-shot image generator.** It produces a storyboard and panel plan you can revise before rendering, and supports per-panel retry instead of redrawing the whole page.
+- **Not a style-cloning tool.** It recommends from curated presets and refuses to imitate a living artist's signature style.
+- **Not a research tool.** It visualizes material you already have; it does not go find or verify the source content for you.
 
 ## Decision flow
 
