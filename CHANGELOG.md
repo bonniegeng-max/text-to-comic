@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.4.0
+
+Released 2026-09-29. Default character asset + panel-level quick commands. JSON schemas are unchanged.
+
+### Added
+
+- `characters/protagonist.md`: default character card (black short hair, round glasses, slim young woman). Loaded automatically when the user does not name a protagonist; its visual anchors are injected into every panel prompt, keeping the protagonist consistent across panels and across sessions. Custom protagonists write a temporary `characters/custom-<slug>.md` instead of overwriting the shipped card.
+- `characters/protagonist-ref.png` (planned optional asset): character reference sheet, used only when the host image tool accepts reference images.
+- SKILL.md `Quick commands（快速指令）`:
+  - `只出分镜` / `storyboard only` — stop after the panel plan, render nothing
+  - `重出第 N 格` / `重出 2,5,8` / `regenerate N` — regenerate only the listed panels, reusing the panel plan and prompts
+  - `换画风保留分镜` — keep the storyboard, recompile prompts with a new style preset
+- SKILL.md artifact naming convention: `prompts/NN.md` + `pages/NN-<slug>.png` mapped 1:1 to the panels array, making single-panel regeneration reliable.
+
+### Changed
+
+- SKILL.md frontmatter `version`: 2.3.1 → 2.4.0.
+- SKILL.md `description`: adds default character card coverage (character card / 角色卡) and quick-command triggers (只出分镜 / 只重出某一格 / 换主角卡).
+- SKILL.md step 3: renamed to "Load or create the character bible" — default asset path first, custom path second.
+- SKILL.md `Example resources`: lists `characters/protagonist.md`.
+
 ## 2.3.1
 
 Released 2026-09-13. ClawHub discoverability fix. Skill behavior is unchanged.

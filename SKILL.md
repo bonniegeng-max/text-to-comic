@@ -1,7 +1,7 @@
 ---
 name: text-to-comic
-version: 2.3.1
-description: Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram — storyboard and panel plan first, then panel-by-panel rendering, with style presets and consistent characters. 把文字、对话、日记、照片说明或知识内容转成漫画/绘本/信息图，先出分镜再逐格出图，角色一致、可只改单格。Use when 想画故事、对话变漫画、概念变信息图、旅行日记配图、改某一格而不重画整页。Not for 纯文字写作、模仿在世画家的标志性风格、复制受版权保护的素材。
+version: 2.4.0
+description: Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram — storyboard and panel plan first, then panel-by-panel rendering, with style presets and consistent characters. Ships a default character card (character card / 角色卡) that keeps the protagonist consistent across sessions. 把文字、对话、日记、照片说明或知识内容转成漫画/绘本/信息图，先出分镜再逐格出图，自带默认角色卡保证跨会话主角一致，支持只出分镜、只重出某一格。Use when 想画故事、对话变漫画、概念变信息图、旅行日记配图、改某一格而不重画整页、只出分镜、换主角卡。Not for 纯文字写作、模仿在世画家的标志性风格、复制受版权保护的素材。
 metadata: { "openclaw": { "os": ["darwin","linux"], "requires": { "bins": ["python3"], "config": ["image_gen.enabled"] } } }
 user-invocable: true
 disable-model-invocation: false
@@ -122,9 +122,22 @@ For infographic mode:
 - use `format = single`
 - still produce a `panels` array, usually with one major page and multiple structured sections inside the scene/action/must_include fields
 
-### 3. Create a character bible when needed
+### 3. Load or create the character bible
 
-If a stable protagonist or recurring cast exists, create a compact character bible and reuse the same visual anchors in every panel.
+Two paths:
+
+**a. Default protagonist asset（默认路径）**
+
+If the user does not name or describe a protagonist, load the shipped character card before storyboarding:
+
+- read `characters/protagonist.md` (default: black short hair, round glasses, slim young woman)
+- inject its visual anchors into every panel prompt (see step 4), so the protagonist stays consistent across panels *and across sessions*
+- never modify the default card; it is a shipped asset
+- `characters/protagonist-ref.png` is an optional reference sheet; use it only when the host image tool accepts reference images, otherwise rely on the text anchors alone
+
+**b. Custom protagonist（用户指定主角）**
+
+If the user names or describes a protagonist, build a compact character bible instead and reuse it in every panel. Optionally save it as `characters/custom-<slug>.md` for the session — do not overwrite `characters/protagonist.md`.
 
 Minimum character anchors:
 - age/gender presentation when relevant
@@ -289,10 +302,11 @@ Default user-facing output should include:
 - final image(s) or assembled page
 - concise notes if any panel required retries or fallback
 
-Internally keep these artifacts whenever useful:
+Internally keep these artifacts whenever useful, using the naming convention from `Quick commands`:
 - `panel_plan.json`
-- per-panel render task records
-- retry notes
+- `prompts/NN.md` per panel
+- `pages/NN-<slug>.png` per panel
+- per-panel render task records and retry notes
 
 Do not force raw JSON on the user unless they ask for it or the task benefits from editable intermediate output.
 
@@ -320,9 +334,26 @@ When a request is ambiguous, recommend 2 to 3 styles instead of forcing a single
 If you need a concrete starting point, read:
 - `examples/four-panel-demo.json`
 - `examples/chinese-webtoon-demo.json` (zh-CN diary/slice-of-life webtoon example)
+- `characters/protagonist.md` (default character card)
 - `presets/styles.json`
 - `schemas/panel-plan.schema.json`
 - `schemas/render-task.schema.json`
+
+## Quick commands（快速指令）
+
+These are shortcuts over the core workflow; they reuse the same schemas, retry policy, and character bible.
+
+- `只出分镜` / `storyboard only` — stop after the panel plan; render nothing. Cheapest way to iterate on narrative before spending image calls.
+- `重出第 N 格` / `重出 2,5,8` / `regenerate N` — regenerate only the listed panels. Reuse `panel_plan.json` and the compiled prompts, re-render just those panels, keep all other panels untouched, and record the update in the render-task notes.
+- `换画风保留分镜` — keep the panel plan, recompile prompts with a different style preset, re-render all panels.
+
+Artifact naming convention (when saving to disk):
+
+- `panel_plan.json` — the storyboard / panel plan
+- `prompts/NN.md` — compiled prompt for panel NN
+- `pages/NN-<slug>.png` — rendered image for panel NN
+
+`NN` is the 1-based panel index matching the order of the `panels` array. The mapping between `prompts/`, `pages/`, and the panels array is what makes single-panel regeneration reliable.
 
 ## Revision behavior
 
