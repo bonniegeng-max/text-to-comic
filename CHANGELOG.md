@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.4.1
+
+Released 2026-09-29. Ships the character reference sheet that 2.4.0 listed as planned. No behavior change.
+
+### Added
+
+- `characters/protagonist-ref.png`: actual character reference sheet (front / three-quarter / side full-body views + five-expression row), watermark-free. Used only when the host image tool accepts reference images; text anchors remain the source of truth.
+- `characters/protagonist.md`: new 配套参考图 section describing when and how to use the sheet.
+
 ## 2.4.0
 
 Released 2026-09-29. Default character asset + panel-level quick commands. JSON schemas are unchanged.
@@ -7,7 +16,7 @@ Released 2026-09-29. Default character asset + panel-level quick commands. JSON 
 ### Added
 
 - `characters/protagonist.md`: default character card (black short hair, round glasses, slim young woman). Loaded automatically when the user does not name a protagonist; its visual anchors are injected into every panel prompt, keeping the protagonist consistent across panels and across sessions. Custom protagonists write a temporary `characters/custom-<slug>.md` instead of overwriting the shipped card.
-- `characters/protagonist-ref.png` (planned optional asset): character reference sheet, used only when the host image tool accepts reference images.
+- `characters/protagonist-ref.png`: character reference sheet, used only when the host image tool accepts reference images. *(planned in 2.4.0, shipped in 2.4.1)*
 - SKILL.md `Quick commands（快速指令）`:
   - `只出分镜` / `storyboard only` — stop after the panel plan, render nothing
   - `重出第 N 格` / `重出 2,5,8` / `regenerate N` — regenerate only the listed panels, reusing the panel plan and prompts

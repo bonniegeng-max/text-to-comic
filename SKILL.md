@@ -1,6 +1,6 @@
 ---
 name: text-to-comic
-version: 2.4.0
+version: 2.4.1
 description: Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram — storyboard and panel plan first, then panel-by-panel rendering, with style presets and consistent characters. Ships a default character card (character card / 角色卡) that keeps the protagonist consistent across sessions. 把文字、对话、日记、照片说明或知识内容转成漫画/绘本/信息图，先出分镜再逐格出图，自带默认角色卡保证跨会话主角一致，支持只出分镜、只重出某一格。Use when 想画故事、对话变漫画、概念变信息图、旅行日记配图、改某一格而不重画整页、只出分镜、换主角卡。Not for 纯文字写作、模仿在世画家的标志性风格、复制受版权保护的素材。
 metadata: { "openclaw": { "os": ["darwin","linux"], "requires": { "bins": ["python3"], "config": ["image_gen.enabled"] } } }
 user-invocable: true
