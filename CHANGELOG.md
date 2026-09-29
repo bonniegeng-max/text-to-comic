@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.4.2
+
+Released 2026-09-29. Release-metadata fix only. No file content, schema, or behavior change.
+
+### Fixed
+
+- Restored the ClawHub display name to `Text-to-Comic · 文字转漫画`. Publishing 2.4.0/2.4.1 without `--name` caused ClawHub to fall back to the raw slug, which drops the Chinese search surface.
+- Release note: **always publish with `--name "Text-to-Comic · 文字转漫画"`.** `clawhub publish --name "Text-to-Comic · 文字转漫画" --slug text-to-comic --version <v>`.
+
 ## 2.4.1
 
 Released 2026-09-29. Ships the character reference sheet that 2.4.0 listed as planned. No behavior change.
