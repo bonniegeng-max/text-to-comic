@@ -1,15 +1,8 @@
 ## Description:
 
-text-to-comic 2.0.0 turns user-provided stories, dialog, diary entries, poems, travel notes, photos, or knowledge summaries into comics, picture-book pages, infographics, or hybrid visual outputs.
+Turns user-provided text, dialogue, diary entries, photo notes, and knowledge notes into planned comics, picture books, infographics, or hybrid visual pages with consistent characters.
 
-Compared with the original 1.0.0 release, this version keeps the same creator-friendly product direction while adding a structured planning layer:
-- style presets
-- panel-plan JSON
-- render-task JSON
-- per-panel retry and fallback
-- single-panel repair workflow
-
-This skill is suitable for creators who want stronger controllability, repeatability, and easier iteration before publishing visual content.
+This skill is ready for commercial/non-commercial use.
 
 ## Publisher:
 
@@ -21,45 +14,44 @@ MIT-0
 
 ## Use Case:
 
-Use this skill to:
-- turn a diary entry into a multi-panel comic
-- convert dialog into a 4-panel strip
-- turn a poem into a picture-book-like visual sequence
-- convert a concept or framework into an infographic
-- iterate on a single weak panel without rerendering the whole page
+Creators, educators, and other users turn their own stories, conversations, travel notes, or explanatory material into storyboards and illustrated pages, with options to revise individual panels.
 
-## Deployment Geography for Use:
+### Deployment Geography for Use:
 
 Global
 
 ## Known Risks and Mitigations:
 
-Risk: User text, reference images, or photo descriptions may be processed by the configured image-generation provider.
+Risk: Saved custom character cards can retain sensitive personal traits.
 
-Mitigation: Avoid submitting private or sensitive material unless the user is comfortable with that processing.
+Mitigation: Avoid including sensitive traits unless you intend to reuse them; review saved character files.
 
-Risk: Generated panels may contain inconsistent characters, visual artifacts, or style drift.
+Risk: Default bilingual or Chinese captions may not match the intended audience.
 
-Mitigation: Use the panel plan, render task records, and bounded retry/fallback workflow to review outputs before release.
+Mitigation: Specify the desired output language when requesting the visual.
 
-Risk: Third-party copyrighted material may lead to derivative outputs if used directly.
+Risk: The workflow may save storyboards, prompts, and page images in the working session.
 
-Mitigation: Prefer original, summarized, or rights-cleared source material and avoid direct transformation of copyrighted works.
+Mitigation: Review generated files before sharing or retaining them.
+
+## Reference(s):
+
+- [ClawHub skill listing: AI漫画 · 文字转漫画](https://clawhub.ai/bonniegeng-max/skills/text-to-comic)
 
 ## Skill Output:
 
-**Output Type(s):** [Guidance, Markdown, Text, Files]
+**Output Type(s):** [Text, Markdown, JSON, Images]
 
-**Output Format:** [Storyboard summaries, JSON intermediate artifacts, prompts, and generated image files]
+**Output Format:** [Storyboard and panel plan, optional per-panel prompts, and rendered panels or assembled comic page]
 
-**Output Parameters:** [1D]
+**Output Parameters:** [1D text and 2D images]
 
-**Other Properties Related to Output:** [May output assembled PNG or JPEG pages; requires python3 and image generation to be enabled.]
+**Other Properties Related to Output:** [Supports storyboard-only output and regenerating selected panels; images require an enabled image-generation capability.]
 
 ## Skill Version(s):
 
-2.0.0 (proposed next release)
+2.7.0 (local build; not published to ClawHub)
 
 ## Ethical Considerations:
 
-Users should review all generated images, prompts, and intermediate artifacts before release, and should apply their own safety, legal, privacy, and compliance standards.
+Users should evaluate whether this skill is appropriate for their environment, review any generated or modified files before relying on them, and apply their organization's safety, security, and compliance requirements before deployment.

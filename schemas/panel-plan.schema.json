@@ -19,11 +19,25 @@
     },
     "visual_form": {
       "type": "string",
-      "enum": ["comic", "picture-book", "infographic", "hybrid"]
+      "enum": [
+        "comic",
+        "picture-book",
+        "infographic",
+        "hybrid"
+      ]
     },
     "format": {
       "type": "string",
-      "enum": ["single", "4-panel", "6-panel", "8-panel", "10-panel", "12-panel", "webtoon", "custom"]
+      "enum": [
+        "single",
+        "4-panel",
+        "6-panel",
+        "8-panel",
+        "10-panel",
+        "12-panel",
+        "webtoon",
+        "custom"
+      ]
     },
     "genre": {
       "type": "string"
@@ -36,7 +50,13 @@
     },
     "aspect_ratio": {
       "type": "string",
-      "enum": ["1:1", "4:5", "16:9", "9:16", "custom"]
+      "enum": [
+        "1:1",
+        "4:5",
+        "16:9",
+        "9:16",
+        "custom"
+      ]
     },
     "source_summary": {
       "type": "string"
@@ -49,7 +69,12 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["character_id", "name", "appearance", "must_keep"],
+        "required": [
+          "character_id",
+          "name",
+          "appearance",
+          "must_keep"
+        ],
         "properties": {
           "character_id": {
             "type": "string"
@@ -61,19 +86,71 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "age_presentation": { "type": "string" },
-              "hair": { "type": "string" },
-              "face": { "type": "string" },
-              "eyewear": { "type": "string" },
-              "outfit": { "type": "string" },
-              "accent_color": { "type": "string" },
-              "build": { "type": "string" },
-              "vibe": { "type": "string" }
+              "age_presentation": {
+                "type": "string"
+              },
+              "hair": {
+                "type": "string"
+              },
+              "face": {
+                "type": "string"
+              },
+              "eyewear": {
+                "type": "string"
+              },
+              "outfit": {
+                "type": "string"
+              },
+              "accent_color": {
+                "type": "string"
+              },
+              "build": {
+                "type": "string"
+              },
+              "vibe": {
+                "type": "string"
+              }
             }
           },
           "must_keep": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
+          },
+          "hard_anchors": {
+            "type": "array",
+            "description": "可选。不写则由 appearance 的 hair/eyewear/build/face 自动推导。",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "must_keep_value"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "对应 appearance 的字段名，如 hair"
+                },
+                "label_zh": {
+                  "type": "string"
+                },
+                "must_keep_value": {
+                  "type": "string"
+                },
+                "must_match": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "reference_image": {
+            "type": "string",
+            "description": "可选。该角色的参考图路径，首格渲染时提示带上。"
           }
         }
       }
@@ -102,11 +179,28 @@
           },
           "narrative_role": {
             "type": "string",
-            "enum": ["setup", "build", "twist", "payoff", "transition", "explain", "cta", "cover"]
+            "enum": [
+              "setup",
+              "build",
+              "twist",
+              "payoff",
+              "transition",
+              "explain",
+              "cta",
+              "cover"
+            ]
           },
           "shot": {
             "type": "string",
-            "enum": ["wide", "medium", "close-up", "detail", "overhead", "portrait", "custom"]
+            "enum": [
+              "wide",
+              "medium",
+              "close-up",
+              "detail",
+              "overhead",
+              "portrait",
+              "custom"
+            ]
           },
           "camera_angle": {
             "type": "string"
@@ -128,11 +222,20 @@
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["speaker", "text"],
+              "required": [
+                "speaker",
+                "text"
+              ],
               "properties": {
-                "speaker": { "type": "string" },
-                "text": { "type": "string" },
-                "language": { "type": "string" }
+                "speaker": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "language": {
+                  "type": "string"
+                }
               }
             }
           },
@@ -141,11 +244,15 @@
           },
           "must_include": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "avoid": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "visual_priority": {
             "type": "string"
@@ -167,7 +274,14 @@
       "properties": {
         "layout": {
           "type": "string",
-          "enum": ["single", "2x2", "2x3", "2x4", "vertical-stack", "custom"]
+          "enum": [
+            "single",
+            "2x2",
+            "2x3",
+            "2x4",
+            "vertical-stack",
+            "custom"
+          ]
         },
         "gutter_px": {
           "type": "integer",
@@ -175,7 +289,11 @@
         },
         "caption_mode": {
           "type": "string",
-          "enum": ["overlay", "below-panel", "none"]
+          "enum": [
+            "overlay",
+            "below-panel",
+            "none"
+          ]
         },
         "background": {
           "type": "string"

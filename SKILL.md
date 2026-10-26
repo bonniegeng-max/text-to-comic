@@ -1,7 +1,7 @@
 ---
 name: text-to-comic
-version: 2.4.2
-description: Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram — storyboard and panel plan first, then panel-by-panel rendering, with style presets and consistent characters. Ships a default character card (character card / 角色卡) that keeps the protagonist consistent across sessions. 把文字、对话、日记、照片说明或知识内容转成漫画/绘本/信息图，先出分镜再逐格出图，自带默认角色卡保证跨会话主角一致，支持只出分镜、只重出某一格。Use when 想画故事、对话变漫画、概念变信息图、旅行日记配图、改某一格而不重画整页、只出分镜、换主角卡。Not for 纯文字写作、模仿在世画家的标志性风格、复制受版权保护的素材。
+version: 2.7.0
+description: Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram — storyboard and panel plan first, then panel-by-panel rendering, with style presets and consistent characters. Ships a default character card (character card / 角色卡) that keeps the protagonist consistent across sessions. 把文字、对话、日记、照片说明或知识内容转成漫画/绘本/信息图，先出分镜再逐格出图，自带默认角色卡保证跨会话主角一致，支持只出分镜、只重出某一格。Use when 想画故事、对话变漫画、概念变信息图、旅行日记配图、画四格漫画、连环画、条漫、绘本分镜、漫画日记、改某一格而不重画整页、只出分镜、换主角卡。Not for 纯文字写作、模仿在世画家的标志性风格、复制受版权保护的素材。
 metadata: { "openclaw": { "os": ["darwin","linux"], "requires": { "bins": ["python3"], "config": ["image_gen.enabled"] } } }
 user-invocable: true
 disable-model-invocation: false
@@ -137,7 +137,14 @@ If the user does not name or describe a protagonist, load the shipped character 
 
 **b. Custom protagonist（用户指定主角）**
 
-If the user names or describes a protagonist, build a compact character bible instead and reuse it in every panel. Optionally save it as `characters/custom-<slug>.md` for the session — do not overwrite `characters/protagonist.md`.
+If the user names or describes a protagonist, **build a structured character card** instead of a loose bible entry — the card is what keeps that character from drifting across panels and sessions.
+
+- generate one: `python3 scripts/character_card.py init --name 小陈 --hair "short black hair" --eyewear "round glasses" --build slim --out characters/cards/xiaochen.json`
+- or migrate an existing bible entry: `python3 scripts/character_card.py from-bible <plan.json> --name 小陈 --out characters/cards/xiaochen.json`
+- `characters/cards/*.json` is auto-loaded; matching is by `character_id` or `name`
+- inspect / verify: `python3 scripts/character_card.py list` and `python3 scripts/character_card.py check`
+- do not modify `characters/protagonist.md` or `presets/default_character.json`; they are shipped assets
+- template: `presets/character-card.template.json`, schema: `schemas/character-card.schema.json`
 
 Minimum character anchors:
 - age/gender presentation when relevant
@@ -149,7 +156,28 @@ Minimum character anchors:
 - body build or silhouette
 - vibe/expression
 
-Keep these anchors stable across all panels.
+Keep these anchors stable across all panels. Note which fields are anchor-eligible below — outfit and accent color are meant to change per scene.
+
+**c. 锚点规则对默认主角和自定义角色完全一致（自动兜底）**
+
+`scripts/compile_prompt.py` 逐角色保证锚点进 prompt，不依赖模型每次现场记得填写。规则只有一套，区别只在锚点来源：
+
+| 情况 | 行为 |
+|---|---|
+| 角色有卡片 | 用卡片的 `hard_anchors`；卡片没写则从卡片 `appearance` 推导 |
+| 角色没有卡片 | 从分镜里该角色自己的 `appearance` 推导（分镜字段本身就是结构化模板） |
+| `character_bible` 缺失/为空 | 注入默认主角卡（`character_guard.injected = true`） |
+| 信息图 `visual_form = infographic` | 不注入、不检查（无角色一致性需求） |
+
+- 推导用的锚点字段：**hair / eyewear / build**；三者都没填才退回 face / outfit / accent_color 之一
+- `outfit` 与 `accent_color` 默认不做锚点——服装和配色要能按场景换
+- 补齐项记录在 `character_guard.patched_anchors`；逐角色的锚点来源与补齐明细在 `character_guard.characters[]`
+- 完全关闭：`--no-character-guard`
+- 卡片目录可换：`--character-card-dir <dir>`；额外卡片：`--character-card <path>`（可重复）
+
+默认主角的硬锚点是**黑色短发 / 圆框眼镜 / 纤细体型**三项，任何画风、任何一格都不允许改变。自定义角色的锚点由它自己的卡片或 appearance 决定，同样不允许帧间漂移。
+
+`scripts/validate_panel_plan.py` 在渲染前**逐角色**拦截三类问题：分镜缺 `character_bible`、某个角色 `must_keep` 缺锚点、角色没有任何可锚定的外观字段。它只做提醒，不做修改——补齐交给 compile 阶段。
 
 ### 4. Select and compile style preset
 
@@ -312,20 +340,23 @@ Do not force raw JSON on the user unless they ask for it or the task benefits fr
 
 ## Style system
 
-Supported style presets live in `presets/styles.json`.
+Supported style presets live in `presets/styles.json` (12 presets).
 
-v2 keeps the spirit of the v1 style library while making it easier to render and retry:
-- bright cute cartoon
-- warm watercolor picture book
-- Japanese shonen manga
-- colorful slice-of-life manga
-- Chinese gongbi comic
-- ink wash comic
-- 3D cartoon animation
-- claymation
-- sci-fi future comic
-- vintage watercolor travelogue
-- doodle sketch comic
+`presets/styles.json` is the source of truth; the list below is a human-readable summary:
+- `cute-cartoon` — bright cute cartoon / 明亮可爱卡通
+- `watercolor-picture-book` — warm watercolor picture book / 温暖水彩绘本
+- `shonen-manga` — Japanese shonen manga / 日式少年漫画
+- `slice-of-life-color` — colorful slice-of-life manga / 彩色日常漫画
+- `gongbi-comic` — Chinese gongbi comic / 国风工笔漫画
+- `ink-wash-comic` — ink wash comic / 写意水墨漫画
+- `toon-3d-animation` — 3D cartoon animation / 3D 卡通动画
+- `claymation` — claymation / 黏土定格
+- `sci-fi-future` — sci-fi future comic / 科幻未来漫画
+- `vintage-watercolor-travelogue` — vintage watercolor travelogue / 复古手绘水彩
+- `doodle-sketch` — doodle sketch comic / 潦草涂鸦风
+- `naive-crayon-sketch` — naive red-blue crayon doodle / 红蓝蜡笔稚拙涂鸦
+
+`naive-crayon-sketch` note: use it for photo-to-doodle redraws (often a top-photo / bottom-doodle contrast layout), travel memory keeping, and childlike records. Its `fallback_style_id` is `doodle-sketch` and its `stability_rank` is 2, so it is a reasonable first choice for casual travel material but should fall back quickly if faces turn unreadable.
 
 When a request is ambiguous, recommend 2 to 3 styles instead of forcing a single one.
 
@@ -335,8 +366,13 @@ If you need a concrete starting point, read:
 - `examples/four-panel-demo.json`
 - `examples/chinese-webtoon-demo.json` (zh-CN diary/slice-of-life webtoon example)
 - `characters/protagonist.md` (default character card)
+- `presets/default_character.json` (structured version of the default card — used by compile/validate for anchor guarding)
+- `presets/character-card.template.json` (template for custom character cards)
+- `characters/cards/` (custom character cards, auto-loaded)
+- `scripts/character_card.py` (`init` / `from-bible` / `check` / `list`)
 - `presets/styles.json`
 - `schemas/panel-plan.schema.json`
+- `schemas/character-card.schema.json`
 - `schemas/render-task.schema.json`
 
 ## Quick commands（快速指令）

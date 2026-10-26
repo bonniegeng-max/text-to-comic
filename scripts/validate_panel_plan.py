@@ -9,10 +9,77 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-def load_json(path: Path) -> Any:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+from character_anchors import (  # noqa: E402  (需要先修正 sys.path)
+    build_registry,
+    derive_anchors,
+    enrich_character,
+    load_card,
+    load_card_dir,
+    load_json,
+    match_card,
+    missing_anchors,
+)
+
+
+def load_character_cards(paths: List[Path], card_dir: Path | None = None) -> List[Dict[str, Any]]:
+    cards: List[Dict[str, Any]] = []
+    for path in paths:
+        card = load_card(path)
+        if card:
+            cards.append(card)
+    if card_dir:
+        known = {c.get("card_path") for c in cards}
+        for card in load_card_dir(card_dir):
+            if card.get("card_path") not in known:
+                cards.append(card)
+    return cards
+
+
+def check_character_anchors(plan: Dict[str, Any], cards: List[Dict[str, Any]]) -> List[str]:
+    """逐角色检查锚点是否写全 —— 默认主角和自定义角色同一套规则。
+
+    自定义角色不再被跳过：有卡片就按卡片锚点查，没卡片就按它自己的 appearance 查。
+    compile_prompt.py 会兜底补齐，但校验阶段就该拦住，避免"补了但没人知道漂过"。
+    """
+    errors: List[str] = []
+    # 信息图/纯图表不需要角色一致性，跳过整段角色检查
+    if plan.get("visual_form") == "infographic":
+        return errors
+    bible = plan.get("character_bible") or []
+    if not bible:
+        errors.append(
+            "missing character_bible: 分镜缺少角色设定，角色会在逐格渲染时漂移"
+            "（compile_prompt.py 可自动注入默认卡，但建议在分镜阶段显式写出）"
+        )
+        return errors
+    if not cards:
+        return errors
+
+    registry = build_registry(cards)
+    for index, raw_character in enumerate(bible, start=1):
+        card = match_card(raw_character, registry)
+        character = enrich_character(raw_character, card) if card else raw_character
+        anchors = derive_anchors(
+            character,
+            card.get("hard_anchors") if card else character.get("hard_anchors"),
+        )
+        name = character.get("name") or character.get("character_id") or f"第 {index} 个角色"
+        if not anchors:
+            errors.append(
+                f"{name} 缺少可用于一致性的外观字段"
+                "（hair / eyewear / build / face 至少填一项，或提供角色卡）"
+            )
+            continue
+        missing = missing_anchors(character, anchors)
+        if missing:
+            if card:
+                hint = f"（compile_prompt.py 会按卡片 {card.get('card_path') or card.get('source_doc')} 补齐）"
+            else:
+                hint = "（compile_prompt.py 会按其 appearance 补齐，建议分镜阶段就写全）"
+            errors.append(f"{name} 的 must_keep 缺少锚点：{'、'.join(missing)}{hint}")
+    return errors
 
 
 def expected_panel_count(format_name: str) -> int | None:
@@ -27,7 +94,7 @@ def expected_panel_count(format_name: str) -> int | None:
     return mapping.get(format_name)
 
 
-def validate(plan: Dict[str, Any]) -> List[str]:
+def validate(plan: Dict[str, Any], character_cards: List[Dict[str, Any]] | None = None, check_character: bool = True) -> List[str]:
     errors: List[str] = []
     required_top = ["story_id", "visual_form", "format", "language", "style_id", "panels"]
     for key in required_top:
@@ -78,16 +145,41 @@ def validate(plan: Dict[str, Any]) -> List[str]:
     if plan.get("visual_form") == "infographic" and plan.get("format") != "single":
         errors.append("visual_form=infographic should usually use format=single")
 
+    if check_character:
+        errors.extend(check_character_anchors(plan, character_cards or []))
+
     return errors
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate panel plan JSON.")
     parser.add_argument("panel_plan", help="Path to panel plan JSON")
+    parser.add_argument(
+        "--character-card",
+        action="append",
+        default=None,
+        help="Path to a structured character card (repeatable). Defaults to presets/default_character.json",
+    )
+    parser.add_argument(
+        "--character-card-dir",
+        default="characters/cards",
+        help="Directory of character cards, all *.json are loaded (default: characters/cards)",
+    )
+    parser.add_argument(
+        "--skip-character-check",
+        action="store_true",
+        help="Skip character bible / hard anchor checks",
+    )
     args = parser.parse_args()
 
     plan = load_json(Path(args.panel_plan))
-    errors = validate(plan)
+    if args.skip_character_check:
+        cards: List[Dict[str, Any]] = []
+    else:
+        card_paths = [Path(p) for p in (args.character_card or ["presets/default_character.json"])]
+        card_dir = Path(args.character_card_dir) if args.character_card_dir else None
+        cards = load_character_cards(card_paths, card_dir)
+    errors = validate(plan, character_cards=cards, check_character=not args.skip_character_check)
     if errors:
         print(json.dumps({"ok": False, "errors": errors}, ensure_ascii=False, indent=2))
         return 1

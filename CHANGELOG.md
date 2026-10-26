@@ -1,5 +1,63 @@
 # Changelog
 
+## 2.7.0
+
+Released 2026-10-26. 自定义角色也走结构化模板。默认主角与自定义角色从此共用一套锚点规则。
+
+### Added
+
+- `scripts/character_anchors.py`：锚点逻辑的共享模块。负责归一化角色卡（兼容包裹式与扁平式两种写法）、推导硬锚点、补齐 `must_keep`。compile 与 validate 不再各写一份。
+- `scripts/character_card.py`：角色卡工具。`init` 从命令行字段生成卡片；`from-bible` 把已有分镜里的角色迁成卡片；`check` 校验卡片结构与锚点自洽性（含重复 `character_id` 提示）；`list` 列出卡片与锚点。
+- `presets/character-card.template.json`：自定义角色卡模板。
+- `schemas/character-card.schema.json`：角色卡 schema，兼容包裹式（默认卡）与扁平式（用户手写）两种结构。
+- `characters/cards/`：自定义角色卡目录，`README.md` 说明用法。目录下所有 `*.json` 自动加载。
+
+### Changed
+
+- **自定义角色不再被跳过**。2.6.0 里非默认主角会命中 `skipped_reason: custom character detected`，完全不受锚点保护；现在按同一规则处理：有卡片用卡片锚点，没卡片用它自己的 `appearance` 推导。
+- `scripts/compile_prompt.py`：`--character-card` 改为可重复；新增 `--character-card-dir`（默认 `characters/cards`）。`character_guard` 新增 `characters[]` 逐角色记录锚点来源与补齐明细，并支持多角色各自的参考图（`reference_images`）。
+- 锚点推导字段收敛为 **hair / eyewear / build**（与默认主角卡保持一致，不再自动锚 `face`）：脸型描述对模型的约束力弱于发型/眼镜/体型。三者全空时才退回 face / outfit / accent_color 之一。
+- `scripts/validate_panel_plan.py`：改为逐角色检查，报错带角色名；新增「角色没有任何可锚定外观字段」检查。新增 `--character-card` / `--character-card-dir`。
+- `schemas/panel-plan.schema.json`：`character_bible[]` 新增可选 `hard_anchors` 与 `reference_image`，自定义角色可以在分镜里直接带锚点，不必额外建卡片。
+- 修复：`visual_form=infographic` 时不再注入默认主角（2.6.0 会给信息图塞一个无关角色）。
+- `examples/four-panel-demo.json`：小陈的 `must_keep` 补上 `slim`（锚点完整性）。
+
+## 2.6.0
+
+Released 2026-10-26. 角色卡稳定性加固。JSON schemas 不变。
+
+### Added
+
+- `presets/default_character.json`：默认主角卡的结构化版本（appearance 全字段 + must_keep + 三条 hard_anchors + 参考图路径）。人类可读版仍是 `characters/protagonist.md`，两者需同步维护。
+- `scripts/compile_prompt.py`：新增 `ensure_character_bible()` 与 `--character-card` / `--no-character-guard`。`character_bible` 缺失时自动注入默认主角卡；主角 `must_keep` 缺硬锚点时自动补齐；自定义主角不套用默认硬锚点；`visual_form=infographic` 不受影响。
+- 编译产物新增 `character_guard` 字段：记录本次是否注入、补了哪些锚点、参考图路径，用于定位漂移来源。
+- 首格 prompt 增加 `reference image:` 标记，提示宿主带上 `characters/protagonist-ref.png`。
+
+### Changed
+
+- `scripts/compile_prompt.py`：`character bible` 段落从 prompt 第 9 位前移到第 2 位（紧跟画风模板）——prompt 前段权重更高，锚点后置容易被场景描述稀释。
+- `scripts/validate_panel_plan.py`：新增 `check_character_anchors()` 与 `--character-card` / `--skip-character-check`。渲染前拦截两类问题：分镜缺 `character_bible`、主角 `must_keep` 缺硬锚点（黑短发 / 圆框眼镜 / 纤细）。信息图模式跳过。
+- SKILL.md：新增「硬锚点不会被漏掉（自动兜底）」小节；文件清单补 `presets/default_character.json`。
+- 触发词补充：四格漫画、连环画、条漫、绘本分镜、漫画日记。
+- SKILL.md frontmatter `version`: 2.5.2 → 2.6.0。
+
+## 2.5.0
+
+Released 2026-10-05. Adds one style preset. JSON schemas are unchanged.
+
+### Added
+
+- `presets/styles.json`: new style preset `naive-crayon-sketch`（红蓝蜡笔稚拙涂鸦 / Naive Red-Blue Crayon Doodle）— loose wobbly crayon outlines alternating red and blue (red for warm parts, blue for cool parts), pure white paper background with a small centered subject and huge margins, only 1-2 key subjects lightly colored, cobalt-blue vs orange-red complementary clash with a tiny yellow accent, waxy crayon + colored pencil grain. Built for travel-photo-to-doodle redraws and childlike memory keeping. Falls back to `doodle-sketch`; stability rank 2. Style presets: 11 → 12.
+- SKILL.md frontmatter `version`: 2.4.2 → 2.5.0.
+
+### Changed
+
+- SKILL.md `Style system`: the preset summary list now carries all 12 `style_id` values with bilingual names, plus a usage note and fallback note for `naive-crayon-sketch`.
+- `illustration/naga-bawa-crayon-doodle-2K.jpg`: reference render for the new preset.
+- `README.md`: rewritten for 2.5.0 — removed the stale "2.0.0 draft" framing, corrected the preset count (11 → 12), and documented the actual repository layout including `characters/`, `illustration/`, and `scripts/assemble_page.py`.
+- `skill-card.md`: description and version updated to 2.5.0, added the quick-command and default-character-card coverage.
+
+
 ## 2.4.2
 
 Released 2026-09-29. Release-metadata fix only. No file content, schema, or behavior change.

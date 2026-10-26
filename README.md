@@ -1,58 +1,101 @@
-# text-to-comic v2.0.0
+# text-to-comic v2.7.0
 
 中文 | [English](#english)
 
+当前发布版本：**2.7.0**（已发布至 ClawHub，slug `text-to-comic`）
+
 ## 中文
 
-基于已安装的 `@bonniegeng-max/text-to-comic` 真实 `1.0.0` 版本整理出的 **2.0.0 发布级草案**。
+把文字、对话、日记、照片说明或知识内容，转成漫画 / 绘本 / 信息图 / 混合视觉页。
 
-这个版本保留了原版 skill 的产品方向：
-- 自动判断内容类型
-- 自动选择视觉形式
-- 推荐风格
-- 关注主角一致性与场景连续性
-- 支持漫画 / 绘本 / 信息图 / 混合视觉表达
+核心思路**不是一次性出图**，而是先出可审阅的分镜，再逐格渲染、逐格校验、逐格修复。
 
-同时补上了更适合发布、复用和扩展的结构化能力：
-- `style preset` 注册表
-- `panel plan` schema
-- `render task` schema
-- per-panel retry / fallback
-- 示例输入文件
-- 最小脚本工具
+### 什么时候用
 
-### 为什么做 2.0.0
+- 把故事画成漫画或绘本
+- 把对话变成四格或短漫画
+- 把概念 / 流程做成信息图
+- 给旅行日记、照片笔记配图
+- 只想改某一格、换个画风，而不想整页重画
 
-已安装的 `1.0.0` 版本在“产品思路”上已经很成熟，但在“发布级工程结构”上还有几个明显缺口：
+### 什么时候不用
 
-- 风格能力主要靠 prose 描述，不够结构化
-- storyboard 没有统一 JSON 中间层
-- retry / fallback 是经验规则，不是显式机制
-- 单格修复没有标准任务格式
-- 不方便未来拆分为多个 skill
+- 纯文字写作，没有视觉产出需求
+- 精确模仿在世画家的标志性风格
+- 直接复制受版权保护的第三方素材
 
-2.0.0 的目标不是推翻旧版，而是把旧版中有效的导演式工作流，沉淀成更稳定、更可复用的结构。
+### 它不是什么
 
-### 本仓库建议提交/发布的内容
+- **不是一次性生图工具。** 先产出分镜和 panel plan，确认后再渲染；支持单格重试，而不是整页重画。
+- **不是风格克隆工具。** 从精选 preset 中推荐，拒绝模仿在世画家的签名风格。
+- **不是研究工具。** 它可视化你已经有的材料，不会替你去找或核实原始资料。
 
-```text
-SKILL.md
-README.md
-CHANGELOG.md
-skill-card.md
-RELEASE_NOTES_2.0.0.md
-presets/
-schemas/
-examples/
-scripts/
+## 工作流
+
+1. **分析请求** — 判断内容类型、视觉形式、目标受众、语气
+2. **生成分镜** — 按 `schemas/panel-plan.schema.json` 输出结构化 panel plan
+3. **加载角色卡** — 用户没指定主角时用默认角色卡；指定了主角就用 `characters/cards/` 下的自定义卡。两种卡走同一套锚点保护，保证跨会话一致
+4. **编译画风** — 从 `presets/styles.json` 选 preset，编译成逐格 prompt
+5. **逐格渲染** — 一次一格，不整页一次性生成
+6. **校验** — 角色一致性 / 场景连续性 / 无水印无编号 / 可读性 / 字数预算
+7. **重试** — 按阶梯式策略局部修复，默认每格最多 2 次
+8. **拼版** — 2×2 / 2×3 / 竖版条漫 / 单页，标题与旁白在拼版层叠加
+
+内容复杂时，会在出图前先跟你确认视觉形式和画风选择。
+
+## 自定义角色卡
+
+用户指定主角时，不要只写一段描述——给它一张结构化角色卡，锚点才锁得住。
+
+```bash
+# 新建
+python3 scripts/character_card.py init --name 小陈 \
+  --hair "short black hair" --eyewear "round glasses" --build slim \
+  --out characters/cards/xiaochen.json
+
+# 从已有分镜迁移
+python3 scripts/character_card.py from-bible examples/four-panel-demo.json \
+  --name 小陈 --out characters/cards/xiaochen.json
+
+# 检查 / 列出
+python3 scripts/character_card.py check
+python3 scripts/character_card.py list
 ```
 
-以下目录不建议发布：
-- `skills/`（安装快照）
-- `.clawhub/`
-- `.clawhub-cli/`
+`characters/cards/*.json` 会自动加载，按 `character_id` 或 `name` 匹配分镜里的角色。锚点从 `hair` / `eyewear` / `build` 推导（三者全空才退回 face / outfit / accent_color）；`outfit` 与 `accent_color` 默认不锁，服装和配色要能按场景换。渲染前 `validate_panel_plan.py` 会逐角色检查，编译时 `compile_prompt.py` 会兜底补齐。
 
-### 目录说明
+## 画风库
+
+`presets/styles.json` 收录 **12 种**画风，每种包含 `style_id`、中英文名称、正负向 prompt、`use_cases`、`avoid_cases`、`fallback_style_id`、`stability_rank`。
+
+| style_id | 中文名 |
+|---|---|
+| `cute-cartoon` | 明亮可爱卡通 |
+| `watercolor-picture-book` | 温暖水彩绘本 |
+| `shonen-manga` | 日式少年漫画 |
+| `slice-of-life-color` | 彩色日常漫画 |
+| `gongbi-comic` | 国风工笔漫画 |
+| `ink-wash-comic` | 写意水墨漫画 |
+| `toon-3d-animation` | 3D 卡通动画 |
+| `claymation` | 黏土定格 |
+| `sci-fi-future` | 科幻未来漫画 |
+| `vintage-watercolor-travelogue` | 复古手绘水彩 |
+| `doodle-sketch` | 潦草涂鸦风 |
+| `naive-crayon-sketch` | 红蓝蜡笔稚拙涂鸦（2.5.0 新增） |
+
+画风是**推荐而非硬限制**；但同一页内不混用风格。请求模糊时推荐 2–3 种让用户挑。
+
+`naive-crayon-sketch` 适合照片转涂鸦（上方原图、下方插画对照）、旅行记忆、稚拙记录；`fallback` 为 `doodle-sketch`，`stability_rank` 2。
+
+## 快速指令
+
+| 指令 | 作用 |
+|---|---|
+| `只出分镜` / `storyboard only` | 停在 panel plan，不渲染。省图像调用成本 |
+| `重出第 N 格` / `重出 2,5,8` | 只重渲染指定格，复用已有分镜和 prompt |
+| `换画风保留分镜` | 保留分镜，换画风重新编译并重渲染 |
+
+## 目录结构
 
 ```text
 .
@@ -60,166 +103,139 @@ scripts/
 ├── README.md
 ├── CHANGELOG.md
 ├── skill-card.md
-├── RELEASE_NOTES_2.0.0.md
-├── .gitignore
 ├── presets/
-│   └── styles.json
+│   ├── styles.json                    # 12 种画风
+│   ├── default_character.json         # 默认主角卡（结构化）
+│   └── character-card.template.json   # 自定义角色卡模板
 ├── schemas/
-│   ├── panel-plan.schema.json
-│   └── render-task.schema.json
+│   ├── panel-plan.schema.json         # 分镜计划
+│   ├── character-card.schema.json     # 角色卡
+│   └── render-task.schema.json        # 渲染任务 / 重试记录
+├── characters/
+│   ├── protagonist.md                 # 默认角色卡
+│   ├── protagonist-ref.png            # 角色参考图（可选）
+│   └── cards/                         # 自定义角色卡，自动加载
 ├── examples/
 │   ├── four-panel-demo.json
-│   └── infographic-demo.json
+│   ├── infographic-demo.json
+│   └── chinese-webtoon-demo.json
+├── illustration/
+│   └── naga-bawa-crayon-doodle-2K.jpg # naive-crayon-sketch 效果图
 └── scripts/
-    ├── compile_prompt.py
-    └── validate_panel_plan.py
+    ├── compile_prompt.py              # panel plan + preset → 逐格 prompt
+    ├── validate_panel_plan.py         # schema 与业务规则校验
+    ├── character_anchors.py           # 角色锚点的共享逻辑
+    ├── character_card.py              # 角色卡 init / from-bible / check / list
+    └── assemble_page.py               # 拼版与中文文字叠加
 ```
 
-### 2.0.0 的核心升级
+## 工具脚本
 
-#### 1. 风格结构化
-把 v1 的 11 种风格，改造成可发布的 preset：
-- `style_id`
-- `legacy_name_zh`
-- `positive_prompt_template`
-- `negative_prompt_template`
-- `use_cases`
-- `avoid_cases`
-- `fallback_style_id`
-- `stability_rank`
+```bash
+# 校验分镜
+python3 scripts/validate_panel_plan.py examples/four-panel-demo.json
 
-#### 2. 分镜结构化
-用 `schemas/panel-plan.schema.json` 统一描述：
-- `visual_form`
-- `format`
-- `style_id`
-- `character_bible`
-- `panels[]`
-- `assembly`
+# 编译逐格 prompt
+python3 scripts/compile_prompt.py examples/four-panel-demo.json
 
-#### 3. 重试机制显式化
-用 `schemas/render-task.schema.json` 表达：
-- 每格的 prompt
-- negative prompt
-- attempt 次数
-- validation 结果
-- retry / fallback 决策
+# 拼版（2x2 / 2x3 / webtoon / 长图）
+python3 scripts/assemble_page.py --layout 2x2 --out pages/page-01.png pages/*.png
+```
 
-#### 4. 单格修复成为一等能力
-2.0.0 默认优先：
-- 单格修复
-- 风格微调
-- 保留已成功格子
-- 避免整页重来
+`compile_prompt.py` 会输出 `text_budget` 与 `text_budget_warning`，用于在出图前发现对白过长。
 
-### 默认行为
+## 硬性约束
 
-如果用户只说：
-> 把这段日记画成漫画
+**角色一致性** — 有主角时每格都应明显是同一个人，复用相同核心描述词，不漂移发型、服装、脸型、点缀色。
 
-2.0.0 默认会：
-- 判断为 narrative / dialog / hybrid 中的合理类型
-- 选择 `comic` 视觉形式
-- 选择 `4-panel` 或 `6-panel`
-- 默认使用稳定风格（如 `slice-of-life-color`）
-- 先生成 compact storyboard，再逐格渲染
+**语言分离** — 图内文字需要稳定时用英文简短文字；中文说明、旁白、标签在拼版层叠加。
 
-### 重试策略
+**中文排版** — 单个气泡 ≤ 16 字，整格对白合计 ≤ 40 字，caption ≤ 25 字；使用中文全角标点；标题 ≤ 12 字；竖排文字只在拼版层处理，不依赖 AI 直出。
 
-默认 retry ladder：
-1. 缩短对白或把文字移出图内
-2. 减少背景复杂度
-3. 改成更稳镜头（如 `medium`）
-4. 减少配角
-5. fallback 到更稳的 style preset
+**场景连续性** — 规划时用 `INDOOR` / `OUTDOOR` 等明确标记；场景跳跃过大时加过渡格。
 
-### 示例
+**干净出图** — 统一追加：`no border, no panel frame, no watermark, no AI signature, no accidental page numbering, edge-to-edge composition`。
 
-- `examples/four-panel-demo.json`：四格梗图示例
-- `examples/infographic-demo.json`：信息图示例
+## 依赖
 
-### 最小工具脚本
-
-- `scripts/compile_prompt.py`
-  - 从 `panel plan + style preset` 编译每格 prompt
-- `scripts/validate_panel_plan.py`
-  - 校验 `panel plan` 是否符合 schema 与基本业务规则
-
-### 发布建议
-
-发布到 GitHub / ClawHub 前，建议先确认：
-1. 版本号使用 `2.0.0`
-2. 是否继续保持 `text-to-comic` 这个 slug
-3. 是否下一步拆为两个 skill：
-   - `text-to-comic`
-   - `text-to-infographic` 或 `text-to-visual`
-4. 是否要补一版更贴近 ClawHub 展示风格的英文短说明
-
-### 下一步建议
-
-高优先级：
-- 用真实任务跑 1~2 次 `compile_prompt.py`
-- 用你自己的典型输入补 2~3 个 examples
-- 根据实际效果收缩部分风格 preset 的 use case
-
-中期建议：
-- 补一个 panel-level QA script
-- 增加 webtoon 示例
-- 未来拆 skill
+- `python3`
+- 图像生成能力需启用（`image_gen.enabled`）
+- 运行环境：darwin / linux
 
 ---
 
 ## English
 
-A **publish-ready 2.0.0 draft** rebuilt from the real installed `1.0.0` release of `@bonniegeng-max/text-to-comic`.
+Current release: **2.7.0** (published on ClawHub, slug `text-to-comic`).
 
-This version preserves the strong product direction of the original skill:
-- automatic content-type classification
-- automatic visual-form selection
-- style recommendation
-- strong emphasis on character consistency and scene continuity
-- support for comics, picture books, infographics, and hybrid visual outputs
+Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram page.
 
-At the same time, it adds structure that makes the skill easier to publish, reuse, validate, and extend:
-- a `style preset` registry
-- a `panel plan` schema
-- a `render task` schema
-- per-panel retry / fallback
-- example payloads
-- minimal helper scripts
+The key idea is **not one-shot image generation**. The skill produces a reviewable storyboard and panel plan first, then renders, validates, and repairs panel by panel.
 
-### Why 2.0.0
+### When to use
 
-The installed `1.0.0` version already has a strong “visual director” product shape, but it lacks several publish-grade engineering pieces:
+- draw a story as a comic or picture book
+- turn dialog into a 4-panel or short comic
+- turn a concept or workflow into an infographic
+- illustrate travel notes, diary entries, or photo notes
+- iterate on one panel or swap styles without redrawing the whole page
 
-- style behavior is mostly prose-driven
-- storyboard artifacts are not normalized as JSON
-- retry and fallback are implied rather than formalized
-- single-panel repair is not represented as a first-class task
-- the package is harder to evolve into multiple specialized skills later
+### When not to use
 
-The goal of `2.0.0` is not to replace the old workflow, but to make that workflow more structured, stable, and reusable.
+- pure text writing with no visual output
+- exact imitation of a living artist's distinctive signature style
+- direct reproduction of copyrighted third-party material
 
-### Recommended publishable contents
+### How it differs
 
-```text
-SKILL.md
-README.md
-CHANGELOG.md
-skill-card.md
-RELEASE_NOTES_2.0.0.md
-presets/
-schemas/
-examples/
-scripts/
+- **Not a one-shot image generator.** You get a storyboard and panel plan you can revise before rendering, plus per-panel retry instead of full-page redraws.
+- **Not a style-cloning tool.** It recommends from curated presets and refuses to imitate a living artist's signature style.
+- **Not a research tool.** It visualizes material you already have; it does not go find or verify the source content.
+
+## Workflow
+
+1. **Analyze** — content type, visual form, audience, tone
+2. **Plan** — structured panel plan per `schemas/panel-plan.schema.json`
+3. **Load character cards** — defaults to the shipped card when you do not name a protagonist; a named protagonist gets a structured card from `characters/cards/`. Both go through the same anchor guard.
+4. **Compile style** — pick a preset from `presets/styles.json`, compile per-panel prompts
+5. **Render panel by panel** — never the whole page in one shot
+6. **Validate** — character consistency / scene continuity / no watermark or numbering / readability / text budget
+7. **Retry** — bounded mutation ladder, 2 attempts per panel by default
+8. **Assemble** — 2×2, 2×3, vertical webtoon, or single page; titles and captions overlaid at assembly
+
+## Custom character cards
+
+When a protagonist is named, give them a structured card instead of a loose description — that is what keeps the anchors locked.
+
+```bash
+python3 scripts/character_card.py init --name "Xiao Chen" \
+  --hair "short black hair" --eyewear "round glasses" --build slim \
+  --out characters/cards/xiaochen.json
+python3 scripts/character_card.py from-bible <plan.json> --name "Xiao Chen" --out characters/cards/xiaochen.json
+python3 scripts/character_card.py check
 ```
 
-Do not publish local install artifacts such as:
-- `skills/`
-- `.clawhub/`
-- `.clawhub-cli/`
+Cards in `characters/cards/*.json` are auto-loaded and matched by `character_id` or `name`. Anchors come from `hair` / `eyewear` / `build` (falling back to face / outfit / accent_color only when all three are empty). `outfit` and `accent_color` are intentionally left unanchored so costumes and palettes can change per scene.
 
-### Repository layout
+## Style presets
+
+`presets/styles.json` ships **12** presets, each with `style_id`, bilingual names, positive/negative prompt templates, `use_cases`, `avoid_cases`, `fallback_style_id`, and `stability_rank`.
+
+`cute-cartoon`, `watercolor-picture-book`, `shonen-manga`, `slice-of-life-color`, `gongbi-comic`, `ink-wash-comic`, `toon-3d-animation`, `claymation`, `sci-fi-future`, `vintage-watercolor-travelogue`, `doodle-sketch`, `naive-crayon-sketch` (new in 2.5.0).
+
+Styles are **recommended, not enforced** — but never mix styles within one page. When the request is ambiguous, recommend 2–3 options.
+
+`naive-crayon-sketch` (红蓝蜡笔稚拙涂鸦) targets photo-to-doodle redraws with a top-photo / bottom-doodle contrast layout, travel memory keeping, and childlike records. Falls back to `doodle-sketch`, stability rank 2.
+
+## Quick commands
+
+| Command | Effect |
+|---|---|
+| `只出分镜` / `storyboard only` | stop after the panel plan, render nothing |
+| `重出第 N 格` / `regenerate N` | re-render only the listed panels, reusing plan and prompts |
+| `换画风保留分镜` | keep the storyboard, recompile with a different preset |
+
+## Layout
 
 ```text
 .
@@ -227,99 +243,28 @@ Do not publish local install artifacts such as:
 ├── README.md
 ├── CHANGELOG.md
 ├── skill-card.md
-├── RELEASE_NOTES_2.0.0.md
-├── .gitignore
-├── presets/
-│   └── styles.json
-├── schemas/
-│   ├── panel-plan.schema.json
-│   └── render-task.schema.json
-├── examples/
-│   ├── four-panel-demo.json
-│   └── infographic-demo.json
-└── scripts/
-    ├── compile_prompt.py
-    └── validate_panel_plan.py
+├── presets/                           # 12 styles + default_character.json + character-card.template.json
+├── schemas/                           # panel-plan + character-card + render-task
+├── characters/                        # default character card, reference sheet, cards/ (custom cards)
+├── examples/                          # four-panel / infographic / zh-CN webtoon
+├── illustration/                      # naive-crayon-sketch sample render
+└── scripts/                           # compile_prompt / validate_panel_plan / character_anchors / character_card / assemble_page
 ```
 
-### Key upgrades in 2.0.0
+## Hard constraints
 
-#### 1. Structured styles
-The original 11 style families are preserved, but turned into explicit presets with:
-- `style_id`
-- `legacy_name_zh`
-- `positive_prompt_template`
-- `negative_prompt_template`
-- `use_cases`
-- `avoid_cases`
-- `fallback_style_id`
-- `stability_rank`
+**Character consistency** — every panel should read as the same person; reuse stable core descriptors.
 
-#### 2. Structured storyboarding
-`schemas/panel-plan.schema.json` provides a normalized structure for:
-- `visual_form`
-- `format`
-- `style_id`
-- `character_bible`
-- `panels[]`
-- `assembly`
+**Language separation** — short English text inside images when generation reliability matters; Chinese captions and narration are overlaid during assembly.
 
-#### 3. Formal retry model
-`schemas/render-task.schema.json` captures:
-- prompt
-- negative prompt
-- attempt count
-- validation result
-- retry / fallback decision
+**Chinese typography** — ≤ 16 characters per bubble, ≤ 40 per panel, ≤ 25 per caption; full-width CJK punctuation; vertical text is handled at the assembly layer, never by the image model.
 
-#### 4. Single-panel repair as a first-class path
-The default revision flow prefers:
-- panel-level repair
-- style tuning
-- keeping successful panels
-- avoiding full-page reruns when the problem is local
+**Scene continuity** — tag `INDOOR` / `OUTDOOR` explicitly; add a transition panel when a scene jump would feel abrupt.
 
-### Default behavior
+**Clean images** — always append: `no border, no panel frame, no watermark, no AI signature, no accidental page numbering, edge-to-edge composition`.
 
-If a user simply says:
-> Turn this diary entry into a comic.
+## Requirements
 
-The skill will usually:
-- classify the request as narrative / dialog / hybrid
-- choose `comic` as the visual form
-- choose `4-panel` or `6-panel`
-- default to a stable style such as `slice-of-life-color`
-- create a compact storyboard before panel-by-panel rendering
-
-### Retry behavior
-
-Default retry ladder:
-1. shorten or externalize text
-2. simplify background
-3. switch to a more stable shot such as `medium`
-4. reduce side characters
-5. fall back to a more stable preset
-
-### Examples
-
-- `examples/four-panel-demo.json`: 4-panel comic example
-- `examples/infographic-demo.json`: infographic example
-
-### Minimal helper scripts
-
-- `scripts/compile_prompt.py`
-  - compiles per-panel prompts from a panel plan and style preset registry
-- `scripts/validate_panel_plan.py`
-  - validates panel plan JSON against schema and basic business rules
-
-### Recommended next steps
-
-High priority:
-- run 1–2 real tasks through `compile_prompt.py`
-- add 2–3 more examples based on your most common user inputs
-- refine style use cases based on actual output quality
-
-Mid-term:
-- add panel-level QA tooling
-- add a webtoon example
-- split the skill into multiple focused skills later
+- `python3`
+- image generation must be enabled (`image_gen.enabled`)
+- darwin / linux
