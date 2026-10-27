@@ -152,6 +152,26 @@ def build_style_index(styles_doc: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     return {style["style_id"]: style for style in styles_doc.get("styles", [])}
 
 
+def build_tone_index(tones_doc: Dict[str, Any] | None) -> Dict[str, Dict[str, Any]]:
+    if not tones_doc:
+        return {}
+    return {tone["tone_id"]: tone for tone in tones_doc.get("tones", [])}
+
+
+def resolve_bundle(bundles_doc: Dict[str, Any] | None, bundle_id: str | None) -> Dict[str, Any] | None:
+    """按 bundle_id 取预设包；bundle 只提供默认值，panel plan 显式字段优先。"""
+    if not bundles_doc:
+        return None
+    bundles = {b["bundle_id"]: b for b in bundles_doc.get("bundles", [])}
+    if bundle_id:
+        if bundle_id not in bundles:
+            raise KeyError(f"Unknown bundle_id: {bundle_id}")
+        return bundles[bundle_id]
+    default_id = bundles_doc.get("default_bundle_id")
+    return bundles.get(default_id) if default_id else None
+
+
+
 def compile_panel_prompt(
     panel_plan: Dict[str, Any],
     style: Dict[str, Any],
@@ -160,6 +180,7 @@ def compile_panel_prompt(
     character_bible: List[Dict[str, Any]] | None = None,
     reference_images: List[str] | None = None,
     is_first_panel: bool = False,
+    tone: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     bible = character_bible if character_bible is not None else panel_plan.get("character_bible", [])
     character_summary = summarize_character_bible(bible)
@@ -175,6 +196,8 @@ def compile_panel_prompt(
 
     # 角色锚点紧跟画风模板：prompt 前段权重更高，锚点后置容易被场景描述稀释
     parts = [style.get("positive_prompt_template", "")]
+    if tone and tone.get("prompt_fragment"):
+        parts.append(f"tone: {tone['prompt_fragment']}")
     if character_summary:
         parts.append(f"character bible: {character_summary}")
     if is_first_panel and reference_images:
@@ -201,10 +224,14 @@ def compile_panel_prompt(
         parts.append(clean_suffix)
 
     prompt = ", ".join([p for p in parts if p])
-    negative = style.get("negative_prompt_template", "")
+    negative_parts = [style.get("negative_prompt_template", "")]
+    if tone:
+        negative_parts.extend(tone.get("negative_additions") or [])
+    negative = ", ".join([p for p in negative_parts if p])
     return {
         "panel_id": panel["panel_id"],
         "style_id": style["style_id"],
+        "tone_id": (tone or {}).get("tone_id"),
         "prompt": prompt,
         "negative_prompt": negative,
         "fallback_style_id": style.get("fallback_style_id"),
@@ -233,15 +260,47 @@ def main() -> int:
         help="Disable automatic injection/patching of hard character anchors",
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON")
+    parser.add_argument("--tones", default="presets/tones.json", help="Path to tones.json")
+    parser.add_argument(
+        "--tone",
+        default=None,
+        help="Tone preset id (overrides panel plan tone_id / bundle tone_id). See presets/tones.json",
+    )
+    parser.add_argument("--bundles", default="presets/bundles.json", help="Path to bundles.json")
+    parser.add_argument(
+        "--bundle",
+        default=None,
+        help="Chinese scenario bundle id (diary-strip / knowledge-picturebook / family-quad / poetry-strip). Its style_id and tone_id are used as defaults only.",
+    )
     args = parser.parse_args()
 
     panel_plan = load_json(Path(args.panel_plan))
     styles_doc = load_json(Path(args.styles))
     style_index = build_style_index(styles_doc)
 
-    style_id = panel_plan.get("style_id")
+    tones_path = Path(args.tones)
+    tones_doc = load_json(tones_path) if tones_path.is_file() else None
+    tone_index = build_tone_index(tones_doc)
+
+    bundles_path = Path(args.bundles)
+    bundles_doc = load_json(bundles_path) if bundles_path.is_file() else None
+    try:
+        bundle = resolve_bundle(bundles_doc, args.bundle)
+    except KeyError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    style_id = panel_plan.get("style_id") or (bundle or {}).get("style_id")
     if style_id not in style_index:
         print(f"Unknown style_id: {style_id}", file=sys.stderr)
+        return 2
+
+    tone_id = args.tone or panel_plan.get("tone_id") or (bundle or {}).get("tone_id")
+    if not tone_id and tones_doc:
+        tone_id = tones_doc.get("default_tone_id")
+    tone = tone_index.get(tone_id) if tone_id else None
+    if tone_id and tone is None and tone_index:
+        print(f"Unknown tone_id: {tone_id}", file=sys.stderr)
         return 2
 
     if args.no_character_guard:
@@ -254,15 +313,21 @@ def main() -> int:
 
     style = style_index[style_id]
     clean_suffix = styles_doc.get("global_clean_image_suffix", "")
+    effective_plan = dict(panel_plan)
+    if bundle:
+        for key in ("visual_form", "format"):
+            if not effective_plan.get(key) and bundle.get(key):
+                effective_plan[key] = bundle[key]
     compiled = [
         compile_panel_prompt(
-            panel_plan,
+            effective_plan,
             style,
             panel,
             clean_suffix,
             character_bible=character_bible,
             reference_images=guard.get("reference_images") or [],
             is_first_panel=(index == 0),
+            tone=tone,
         )
         for index, panel in enumerate(panel_plan.get("panels", []))
     ]
@@ -270,6 +335,8 @@ def main() -> int:
     output = {
         "story_id": panel_plan.get("story_id"),
         "style_id": style_id,
+        "tone_id": (tone or {}).get("tone_id"),
+        "bundle_id": (bundle or {}).get("bundle_id") if args.bundle else None,
         "character_guard": guard,
         "compiled_panels": compiled,
     }

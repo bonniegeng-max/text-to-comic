@@ -1,7 +1,7 @@
 ---
 name: text-to-comic
-version: 2.7.1
-description: Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram — storyboard and panel plan first, then panel-by-panel rendering, with style presets and consistent characters. Ships a default character card (character card / 角色卡) that keeps the protagonist consistent across sessions. 把文字、对话、日记、照片说明或知识内容转成漫画/绘本/信息图，先出分镜再逐格出图，自带默认角色卡保证跨会话主角一致，支持只出分镜、只重出某一格。Use when 想画故事、对话变漫画、概念变信息图、旅行日记配图、画四格漫画、连环画、条漫、绘本分镜、漫画日记、改某一格而不重画整页、只出分镜、换主角卡。Not for 纯文字写作、模仿在世画家的标志性风格、复制受版权保护的素材。
+version: 2.8.0
+description: 把文字、对话、日记、照片说明或知识内容转成漫画/绘本/信息图，先出分镜再逐格出图，自带默认角色卡保证跨会话主角一致，支持只出分镜、只重出某一格。6 档语气（warm-healing / playful-snark / calm-documentary / deadpan / lyrical / energetic）与 12 画风正交组合，另有 4 组中文场景预设（日记条漫 / 知识绘本 / 亲子四格 / 诗词条漫），含中文对白字数纪律。Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram — storyboard and panel plan first, then panel-by-panel rendering, with style presets and consistent characters. Ships a default character card (character card / 角色卡) that keeps the protagonist consistent across sessions. Use when 想画故事、对话变漫画、概念变信息图、旅行日记配图、画四格漫画、连环画、条漫、绘本分镜、漫画日记、改某一格而不重画整页、只出分镜、换主角卡。Not for 纯文字写作、模仿在世画家的标志性风格、复制受版权保护的素材。
 metadata: { "openclaw": { "os": ["darwin","linux"], "requires": { "bins": ["python3"], "config": ["image_gen.enabled"] } } }
 user-invocable: true
 disable-model-invocation: false
@@ -360,6 +360,39 @@ Supported style presets live in `presets/styles.json` (12 presets).
 
 When a request is ambiguous, recommend 2 to 3 styles instead of forcing a single one.
 
+## Tone system
+
+画风决定「长什么样」，语气决定「怎么说话、什么情绪」——两者正交，可任意组合。语气预设存在 `presets/tones.json`（6 档），默认 `warm-healing`。
+
+| tone_id | 名称 | 一句话 |
+|---|---|---|
+| `warm-healing` | 温暖治愈 | 柔光、日常细节、不制造冲突 |
+| `playful-snark` | 幽默吐槽 | 夸张反应、自嘲优先、一句一个梗 |
+| `calm-documentary` | 冷静纪实 | 观察式构图、先事实后判断 |
+| `deadpan` | 冷幽默 | 面瘫对荒诞、不解释笑点 |
+| `lyrical` | 诗意抒情 | 留白、季节感、短句分行 |
+| `energetic` | 元气热血 | 动态姿势、上升势能、短促有力 |
+
+每档含三样东西：`prompt_fragment`（拼进画面 prompt）、`negative_additions`（并入 negative）、`dialogue_rules`（对白怎么写）。命令行：`--tone deadpan`。
+
+## Chinese scenario bundles
+
+中文场景预设包在 `presets/bundles.json`（4 组），把「画风 + 语气 + 版式 + 中文对白纪律」一次配好：
+
+| bundle_id | 场景 | 画风 / 语气 | 对白纪律 |
+|---|---|---|---|
+| `diary-strip` | 日记条漫（3-4 格 3:4） | slice-of-life-color / warm-healing | 单气泡 ≤16 字、整格 ≤40 字 |
+| `knowledge-picturebook` | 知识绘本（3 格 4:3） | watercolor-picture-book / calm-documentary | 一格一个概念，概念名要出现在画面里 |
+| `family-quad` | 亲子四格（2×2 1:1） | naive-crayon-sketch / playful-snark | 至少一格只有表情不说话 |
+| `poetry-strip` | 诗词条漫（3 格 3:4） | gongbi-comic / lyrical | 古诗只引用不改写，原句核对通行版 |
+
+优先级：命令行 `--tone` > panel plan 里的 `tone_id` / `style_id` > bundle 默认值。bundle 只提供默认值，不锁死。
+
+```bash
+python3 scripts/compile_prompt.py plan.json --bundle poetry-strip            # 全套默认
+python3 scripts/compile_prompt.py plan.json --bundle poetry-strip --tone deadpan  # 只换语气
+```
+
 ## Example resources
 
 If you need a concrete starting point, read:
@@ -398,3 +431,7 @@ When the user asks for changes:
 - change style preset only if the issue is stylistic, not compositional
 - change the storyboard only if the problem is narrative
 - carry forward the validated character bible and successful panels whenever possible
+
+## 相关 skill / Related skills
+
+- 想固定某个画风、而不是一次性生成：先用 `style-card` 从参考图反推风格卡，再回来按卡出图。

@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.8.0
+
+Released 2026-10-27. 语气维度（tone）上线 + 4 组中文场景预设。画风决定长相，语气决定口吻与情绪，两者正交组合。
+
+### Added
+
+- `presets/tones.json`：6 档语气（warm-healing 温暖治愈 / playful-snark 幽默吐槽 / calm-documentary 冷静纪实 / deadpan 冷幽默 / lyrical 诗意抒情 / energetic 元气热血）。每档含 `prompt_fragment`（拼进画面 prompt）、`negative_additions`（并入 negative）、`dialogue_rules`（对白写法）。
+- `presets/bundles.json`：4 组中文场景预设——`diary-strip` 日记条漫、`knowledge-picturebook` 知识绘本、`family-quad` 亲子四格、`poetry-strip` 诗词条漫。每组配好画风 + 语气 + 版式 + 中文对白字数纪律（如单气泡 ≤16 字）。
+- `scripts/compile_prompt.py` 新增 `--tone` / `--tones` / `--bundle` / `--bundles`；输出增加 `tone_id` 与 `bundle_id` 字段。
+
+### Changed
+
+- 优先级明确为：命令行 `--tone` > panel plan 的 `tone_id`/`style_id` > bundle 默认值——bundle 只给默认，不锁死。
+- 角色锚点仍紧跟画风模板，语气片段插在锚点之前，避免稀释角色一致性。
+
+## 2.7.2
+
+Released 2026-10-27. 内容 = 2.7.1 + 互挂段（与 `style-card` 互相引用：风格卡反推画风 → 本 skill 按卡出图）。功能零变化。
+
+## 2.7.1
+
+Released 2026-10-27. 重发版：内容与 2.7.0 完全一致（角色卡工程 + 锚点 + 逐角色校验），仅版本号换为 2.7.1——2.7.0 于 10-12 提交后卡在 ClawHub 安全扫描队列未上线且占住版本号，换号重发以绕开。
+
 ## 2.7.0
 
 Released 2026-10-26. 自定义角色也走结构化模板。默认主角与自定义角色从此共用一套锚点规则。
