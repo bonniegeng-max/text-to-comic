@@ -1,8 +1,10 @@
-# text-to-comic v2.7.0
+# text-to-comic v2.9.0
 
 中文 | [English](#english)
 
-当前发布版本：**2.7.0**（已发布至 ClawHub，slug `text-to-comic`）
+当前发布版本：**2.9.0**（已发布至 ClawHub，slug `text-to-comic`）
+
+![端到端示例「小嘿的周末」：逐格渲染 + 拼版产出](illustration/demo-xiaohei-weekend.png)
 
 ## 中文
 
@@ -138,11 +140,11 @@ python3 scripts/validate_panel_plan.py examples/four-panel-demo.json
 # 编译逐格 prompt
 python3 scripts/compile_prompt.py examples/four-panel-demo.json
 
-# 拼版（2x2 / 2x3 / webtoon / 长图）
-python3 scripts/assemble_page.py --layout 2x2 --out pages/page-01.png pages/*.png
+# 拼版（2x2 / 2x3 / 竖版长图），中文标题与说明在拼版层叠加
+python3 scripts/assemble_page.py --layout 2x2 --title "小嘿的周末" --out pages/page-01.png pages/*.png
 ```
 
-`compile_prompt.py` 会输出 `text_budget` 与 `text_budget_warning`，用于在出图前发现对白过长。
+`compile_prompt.py` 默认不把对白写进生图 prompt（语言分离：中文对白在拼版层叠加）；需回退旧行为时用 `--dialogue-mode inject`。它同时会输出 `text_budget` 与 `text_budget_warning`，用于在出图前发现对白过长。
 
 ## 硬性约束
 
@@ -166,7 +168,7 @@ python3 scripts/assemble_page.py --layout 2x2 --out pages/page-01.png pages/*.pn
 
 ## English
 
-Current release: **2.7.0** (published on ClawHub, slug `text-to-comic`).
+Current release: **2.9.0** (published on ClawHub, slug `text-to-comic`).
 
 Turn text, dialog, diary entries, photo notes, or knowledge notes into a comic, picture book, infographic, or hybrid comic+diagram page.
 
