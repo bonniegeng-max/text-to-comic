@@ -181,6 +181,7 @@ def compile_panel_prompt(
     reference_images: List[str] | None = None,
     is_first_panel: bool = False,
     tone: Dict[str, Any] | None = None,
+    dialogue_mode: str = "exclude",
 ) -> Dict[str, Any]:
     bible = character_bible if character_bible is not None else panel_plan.get("character_bible", [])
     character_summary = summarize_character_bible(bible)
@@ -218,7 +219,10 @@ def compile_panel_prompt(
         parts.append(f"must include: {must_include}")
     if avoid:
         parts.append(f"avoid: {avoid}")
-    if dialogue_text:
+    if dialogue_text and dialogue_mode == "inject":
+        # Language-separation rule: dialogue is rendered at the assembly layer
+        # by default, so it is NOT baked into the image prompt unless the
+        # caller explicitly opts in with --dialogue-mode inject.
         parts.append(f"dialogue reference: {dialogue_text}")
     if clean_suffix:
         parts.append(clean_suffix)
@@ -260,6 +264,12 @@ def main() -> int:
         help="Disable automatic injection/patching of hard character anchors",
     )
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON")
+    parser.add_argument(
+        "--dialogue-mode",
+        choices=["exclude", "inject"],
+        default="exclude",
+        help="exclude keeps dialogue out of the image prompt (assembly-layer text, default); inject bakes dialogue in",
+    )
     parser.add_argument("--tones", default="presets/tones.json", help="Path to tones.json")
     parser.add_argument(
         "--tone",
@@ -328,6 +338,7 @@ def main() -> int:
             reference_images=guard.get("reference_images") or [],
             is_first_panel=(index == 0),
             tone=tone,
+            dialogue_mode=args.dialogue_mode,
         )
         for index, panel in enumerate(panel_plan.get("panels", []))
     ]
