@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.9.0
+
+Released 2026-11-07. 补齐 README 自 2.5.0 起一直引用、却从未真正存在的拼版脚本；编译默认语言分离。
+
+### Added
+
+- `scripts/assemble_page.py`：拼版脚本（README 自 2.5.0 就在目录树与工具脚本里列出，但从未随包发布）。实现 `2x2` / `2x3` 网格与 `vertical-stack`（webtoon）拼版，可选中文标题/副标题带、逐格 caption、暖白默认背景、gutter 与格宽控制，并自动排除 `--out` 自身以防重复运行时被 glob 误当输入。中文文字只在拼版层绘制，落地语言分离硬约束。
+- `illustration/demo-xiaohei-weekend.png`：端到端示例（「小嘿的周末」4 格日记条漫），逐格渲染后用 `assemble_page.py` 拼版产出，挂 README 顶部。
+
+### Changed
+
+- `scripts/compile_prompt.py`：新增 `--dialogue-mode exclude|inject`，默认 `exclude`——对白不再泄入生图 prompt，对齐「中文对白在拼版层叠加」的规则；旧行为可用 `--dialogue-mode inject` 复现。
+- `README.md`：版本号从 2.7.0 修正为 2.9.0（2.8.0/2.8.1 时 README 未同步）、顶部挂成品图、工具脚本示例补 `--title`。
+
 ## 2.8.0
 
 Released 2026-10-27. 语气维度（tone）上线 + 4 组中文场景预设。画风决定长相，语气决定口吻与情绪，两者正交组合。
